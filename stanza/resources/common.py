@@ -39,6 +39,9 @@ DEFAULT_MODEL_DIR = os.getenv(
     os.path.join(HOME_DIR, 'stanza_resources')
 )
 
+# default timeout in seconds for network downloads
+DEFAULT_DOWNLOAD_TIMEOUT = 30
+
 PRETRAIN_NAMES = ("pretrain", "forward_charlm", "backward_charlm")
 
 class ResourcesFileNotFoundError(FileNotFoundError):
@@ -111,12 +114,18 @@ def assert_file_exists(path, md5=None, alternate_md5=None):
             else:
                 raise ValueError("md5 for %s is %s, expected %s" % (path, file_md5, md5))
 
-def download_file(url, path, proxies, raise_for_status=False):
+def download_file(url, path, proxies, raise_for_status=False, timeout=DEFAULT_DOWNLOAD_TIMEOUT):
     """
     Download a URL into a file as specified by `path`.
+
+    Parameters
+    ----------
+    timeout : int or float, optional
+        Number of seconds to wait for data before giving up.
+        Defaults to ``DEFAULT_DOWNLOAD_TIMEOUT`` seconds.
     """
     verbose = logger.level in [0, 10, 20]
-    r = requests.get(url, stream=True, proxies=proxies)
+    r = requests.get(url, stream=True, proxies=proxies, timeout=timeout)
     if raise_for_status:
         r.raise_for_status()
     with open(path, 'wb') as f:
@@ -132,10 +141,16 @@ def download_file(url, path, proxies, raise_for_status=False):
                     pbar.update(len(chunk))
     return r.status_code
 
-def request_file(url, path, proxies=None, md5=None, raise_for_status=False, log_info=True, alternate_md5=None):
+def request_file(url, path, proxies=None, md5=None, raise_for_status=False, log_info=True, alternate_md5=None, timeout=DEFAULT_DOWNLOAD_TIMEOUT):
     """
-    A complete wrapper over download_file() that also make sure the directory of
-    `path` exists, and that a file matching the md5 value does not exist.
+    A complete wrapper over download_file() that also makes sure the directory of
+    `path` exists and that a file matching the md5 value does not exist.
+
+    Parameters
+    ----------
+    timeout : int or float, optional
+        Passed through to :func:`download_file`; specifies the timeout for
+        the underlying network request. Defaults to ``DEFAULT_DOWNLOAD_TIMEOUT`` seconds.
 
     alternate_md5 allows for an alternate md5 that is acceptable (such as if an older version of a file is okay)
     """
@@ -154,7 +169,7 @@ def request_file(url, path, proxies=None, md5=None, raise_for_status=False, log_
     # This was especially common with resources.json
     with tempfile.TemporaryDirectory(dir=basedir) as temp:
         temppath = os.path.join(temp, os.path.split(path)[-1])
-        download_file(url, temppath, proxies, raise_for_status)
+        download_file(url, temppath, proxies, raise_for_status, timeout=timeout)
         os.replace(temppath, path)
     assert_file_exists(path, md5, alternate_md5)
     if log_info:
