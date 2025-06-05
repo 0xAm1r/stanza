@@ -25,7 +25,7 @@ def get_tqdm():
         pass
 
     if 'zmqshell' in ipy_str:
-        from tqdm import tqdm_notebook as tqdm
+        from tqdm.notebook import tqdm
         return tqdm
     if 'terminal' in ipy_str:
         from tqdm import tqdm
