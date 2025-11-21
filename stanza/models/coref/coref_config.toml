@@ -116,6 +116,28 @@ bce_loss_weight = 0.5
 # The directory that will contain conll prediction files
 conll_log_dir = "data/conll_logs"
 
+# Skip any documents longer than this length
+max_train_len = 5000
+
+# if this is set to false, the model will set its zero_predictor to, well, 0
+use_zeros = true
+
+# two different methods for specifying how to weaken the LR for certain languages
+# however, in their current forms, on an HE experiment, neither worked
+# better than just mixing the two datasets together unweighted
+# Starting from the HE IAHLT dataset, and possibly mixing in the ger/rom ud coref,
+# averaging over 5 different seeds, we got the following results:
+#   HE only:    0.497
+#   Attenuated: 0.508
+#   Scaled:     0.517
+#   Mixed:      0.517
+# the attenuation scheme for that experiment was 1/epoch
+# These were the settings
+#   --lang_lr_weights es=0.2,en=0.2,de=0.2,ca=0.2,fr=0.2,no=0.2
+#   --lang_lr_attenuation es,en,de,ca,fr,no
+lang_lr_attenuation = ""
+lang_lr_weights = ""
+
 # =============================================================================
 # Extra keyword arguments to be passed to bert tokenizers of specified models
 [DEFAULT.tokenizer_kwargs]
@@ -205,12 +227,56 @@ lora = true
 lora_target_modules = [ "query", "value", "output.dense", "intermediate.dense" ]
 lora_modules_to_save = [ "pooler" ]
 
+[muril_base_cased_lora]
+bert_model = "google/muril-base-cased"
+bert_learning_rate = 0.000025
+lora = true
+lora_target_modules = [ "query", "value", "output.dense", "intermediate.dense" ]
+lora_modules_to_save = [ "pooler" ]
+
 [indic_bert_lora]
 bert_model = "ai4bharat/indic-bert"
 bert_learning_rate = 0.0005
 lora = true
 # indic-bert is an albert with repeating layers of different names
 lora_target_modules = [ "query", "value", "dense", "ffn", "full_layer" ]
+lora_modules_to_save = [ "pooler" ]
+
+[alephbertgimmel_lora]
+bert_model = "imvladikon/alephbertgimmel-base-512"
+bert_learning_rate = 0.000025
+lora = true
+lora_target_modules = [ "query", "value", "output.dense", "intermediate.dense" ]
+lora_modules_to_save = [ "pooler" ]
+
+[alephbert_lora]
+bert_model = "onlplab/alephbert-base"
+bert_learning_rate = 0.000025
+lora = true
+lora_target_modules = [ "query", "value", "output.dense", "intermediate.dense" ]
+lora_modules_to_save = [ "pooler" ]
+
+[hero_lora]
+# LR sweep on Hebrew IAHLT coref dev scores
+# (although there may be tokenization problems)
+# 0.000005    0.44202
+# 0.00001     0.45271
+# 0.000015    0.45771
+# 0.00002     0.45877
+# 0.000025    0.46076
+# 0.00003     0.45957
+# 0.000035    0.46187
+# 0.00004     0.46066
+# 0.000045    0.46132
+# 0.00005     0.46238
+# 0.000055    0.46084
+# 0.00006     0.46047
+# 0.000075    0.45772
+# 0.0001      0.44910
+bert_model = "HeNLP/HeRo"
+bert_learning_rate = 0.00005
+lora = true
+lora_target_modules = [ "query", "value", "output.dense", "intermediate.dense" ]
 lora_modules_to_save = [ "pooler" ]
 
 [bert_multilingual_cased_lora]
